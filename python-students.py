@@ -114,29 +114,32 @@ def part3_query_by_gpa(client: MongoClient):
         print(f"ID: {student['_id']} | Name: {full_name} | GPA: {student['gpa']}")
     print(f"Total Matches: {len(results)}")
 
-    print("\n___ [Optional]: Combined Query - (Course ID + Min GPA) ___")
-    course_id_input = input("Enter Course ID (or press Enter to skip): ").strip()
-    gpa_input = input("Enter minimum GPA (or press Enter to skip): ").strip()
+    combined_filter_choice = input("\nDo you want combined search (Course ID + GPA)? ").lower()
+    if combined_filter_choice == "y" or combined_filter_choice == "yes":
+        print("\n\n___ [Optional]: Combined Query - (Course ID + Min GPA) ___")
+        course_id_input = input("Enter Course ID (or press Enter to skip): ").strip()
+        gpa_input = input("Enter minimum GPA (or press Enter to skip): ").strip()
 
-    combined_filter = {}
-    if course_id_input:
-        try:
-            combined_filter["courseIds"] = int(course_id_input)
-        except ValueError:
-            print("Invalid Course ID; skipping course filter.")
-    if gpa_input:
-        try:
-            combined_filter["gpa"] = {"$gt": float(gpa_input)}
-        except ValueError:
-            print("Invalid GPA; skipping GPA filter.")
 
-    if combined_filter:
-        comb_results = list(collection.find(combined_filter).sort("gpa", DESCENDING))
-        print(f"\nMatches for filter {combined_filter}: {len(comb_results)}")
-        for student in comb_results:
-            print(f"ID: {student['_id']} | Name: {student['firstName']} {student['lastName']} | Courses: {student['courseIds']} | GPA: {student['gpa']}")
-    else:
-        print("No combined filters applied.")
+        combined_filter = {}
+        if course_id_input:
+            try:
+                combined_filter["courseIds"] = int(course_id_input)
+            except ValueError:
+                print("Invalid Course ID; skipping course filter.")
+        if gpa_input:
+            try:
+                combined_filter["gpa"] = {"$gt": float(gpa_input)}
+            except ValueError:
+                print("Invalid GPA; skipping GPA filter.")
+
+        if combined_filter:
+            comb_results = list(collection.find(combined_filter).sort("gpa", DESCENDING))
+            print(f"\nMatches for filter {combined_filter}: {len(comb_results)}\n")
+            for student in comb_results:
+                print(f"ID: {student['_id']} | Name: {student['firstName']} {student['lastName']} | Courses: {student['courseIds']} | GPA: {student['gpa']}")
+        else:
+            print("No combined filters applied.")
 
 docs = parse_csv(CSV_FILE)
 client = MongoClient(MONGO_URI)
