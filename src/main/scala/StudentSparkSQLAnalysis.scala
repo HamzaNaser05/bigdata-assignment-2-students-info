@@ -1,6 +1,6 @@
 import org.apache.spark.sql.SparkSession
 
-object StudentAnalysis {
+object StudentSparkSQLAnalysis {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName("Student Record Analysis")
