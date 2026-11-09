@@ -71,7 +71,7 @@ object StudentSparkSQLAnalysis {
         |GROUP BY courseId
         |ORDER BY student_count DESC""".stripMargin
     )
-    courseStatsDF.createGlobalTempView("course_stats")
+    courseStatsDF.createOrReplaceTempView("course_stats")
     courseStatsDF.show()
 
     println("___ Part 4.2.3 Students enrolled in exactly 1, 2 and 3 courses ___")
@@ -112,6 +112,60 @@ object StudentSparkSQLAnalysis {
         |WHERE rank <= 3
         |ORDER BY courseId, rank, gpa DESC""".stripMargin
     ).show(20)
+
+    println("\n___ Part 4.3.3 Pairs of students sharing first and last name")
+    spark.sql(
+      """
+        |SELECT
+        |   a._id AS id_1,
+        |   a.dateOfBirth AS Date_Of_Birth_1,
+        |   b._id AS id_2,
+        |   b.dateOfBirth AS Date_Of_Birth_2
+        |FROM students a
+        |JOIN students b
+        |   ON a.firstName = b.firstName
+        |   AND a.lastName = b.lastName
+        |   And a._id < b._id
+        |ORDER BY a.lastName, a.firstName
+        |""".stripMargin
+    ).show()
+
+  println("\n___ Part 4.3.4 Students with GPA above average of every course they take ___")
+    spark.sql(
+      """
+        |SELECT
+        |   e._id,
+        |   e.firstName,
+        |   e.lastName,
+        |   e.gpa
+        |FROM enrollments e
+        |JOIN course_stats cs ON e.courseId = cs.courseId
+        |GROUP BY e._id, e.firstName, e.lastName, e.gpa
+        |HAVING e.gpa > MAX(cs.avg_gpa)
+        |ORDER BY e._id ASC
+        |""".stripMargin
+    ).show()
+
+    println("\n___ Part 4.4 Writing course_stats back to MongoDB ___")
+    courseStatsDF.write
+      .format("mongodb")
+      .mode("overwrite")
+      .option("connection.uri", mongoUri)
+      .option("database", dbName)
+      .option("collection", "course_stats")
+      .save()
+
+    println("Successfully wrote 'course_stats' collection to MongoDB.")
+
+    println("\n___ Verifying: Reading 'course_stats' back from MongoDB ___")
+    val readBackDF = spark.read
+      .format("mongodb")
+      .option("connection.uri", mongoUri)
+      .option("database", dbName)
+      .option("collection", "course_stats")
+      .load()
+
+    readBackDF.show()
 
     spark.stop()
   }
